@@ -83,6 +83,7 @@ labs/
   course4/           # GenAI hands-on labs
 examples/
   databricks/        # Databricks notebook examples
+  python/            # Python implementations of Sovereign AI concepts
   sovereign/         # Sovereign AI Stack (Rust) examples
 docs/
   outline.md         # Course outline
@@ -108,11 +109,13 @@ docs/
 
 ## Course 4: GenAI Engineering (3 Weeks)
 
-| Week | Topic | Databricks | Sovereign AI |
-|------|-------|------------|--------------|
-| 1 | LLM & Prompts | Foundation Models | realizar |
-| 2 | Vectors & RAG | Vector Search, RAG | trueno-rag |
-| 3 | Fine-tune & Production | Fine-tuning, Serving | entrenar, batuta |
+| Week | Topic | Databricks | Sovereign AI | Python |
+|------|-------|------------|--------------|--------|
+| 1 | LLM & Prompts | Foundation Models | realizar | week1_llm |
+| 2 | Vectors & RAG | Vector Search, RAG | trueno-rag | week2_rag |
+| 3 | Fine-tune & Production | Fine-tuning, Serving | entrenar, batuta | week3_finetuning |
+
+**Python Examples:** For learners who prefer Python over Rust, equivalent implementations are available in `examples/python/course4/`. These demonstrate the same concepts with identical APIs.
 
 ## Certification Alignment
 
