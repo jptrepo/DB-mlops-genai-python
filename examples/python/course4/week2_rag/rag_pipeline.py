@@ -298,8 +298,16 @@ class Reranker:
         self, query: str, results: list[RetrievalResult], top_k: int
     ) -> list[RetrievalResult]:
         """Rerank results based on query relevance."""
+        # Handle empty query or results
+        if not results:
+            return []
+
         query_lower = query.lower()
         query_words = set(query_lower.split())
+
+        # If no query words, just return top results
+        if not query_words:
+            return results[:top_k]
 
         scored = []
         for result in results:
@@ -307,7 +315,7 @@ class Reranker:
             chunk_words = set(chunk_lower.split())
             overlap = len(query_words.intersection(chunk_words))
             # Combine vector score with keyword overlap
-            score = result.score * 0.5 + (overlap / max(len(query_words), 1)) * 0.5
+            score = result.score * 0.5 + (overlap / len(query_words)) * 0.5
             scored.append((result, score))
 
         # Sort by combined score
@@ -406,6 +414,16 @@ class RagPipeline:
     def query(self, question: str) -> RagResponse:
         """Run full RAG query: retrieve + generate."""
         results = self.retrieve(question)
+
+        # Handle empty results
+        if not results:
+            return RagResponse(
+                question=question,
+                answer="No relevant documents found.",
+                sources=[],
+                context_length=0,
+            )
+
         context = self.generate_context(results)
 
         # Simulate answer generation
@@ -445,11 +463,13 @@ class HybridSearch:
     def __init__(self, dimension: int, alpha: float = 0.7) -> None:
         self.vector_index = VectorIndex(dimension)
         self.keyword_index: dict[str, list[int]] = {}
+        self.chunk_to_idx: dict[str, int] = {}  # Map chunk ID to original index
         self.alpha = max(0.0, min(1.0, alpha))  # Weight for vector vs keyword
 
     def add(self, chunk: Chunk, embedding: Embedding) -> None:
         """Add chunk to both vector and keyword indices."""
         idx = len(self.vector_index)
+        self.chunk_to_idx[chunk.id] = idx
 
         # Add to keyword index
         for word in chunk.text.lower().split():
@@ -469,19 +489,21 @@ class HybridSearch:
         query_words = query_lower.split()
         keyword_scores: dict[int, float] = {}
 
-        for word in query_words:
-            if word in self.keyword_index:
-                for idx in self.keyword_index[word]:
-                    keyword_scores[idx] = keyword_scores.get(idx, 0.0) + 1.0 / len(query_words)
+        if query_words:  # Skip keyword scoring if query is empty
+            for word in query_words:
+                if word in self.keyword_index:
+                    for idx in self.keyword_index[word]:
+                        keyword_scores[idx] = keyword_scores.get(idx, 0.0) + 1.0 / len(query_words)
 
-        # Combine scores
-        combined: dict[int, tuple[RetrievalResult, float]] = {}
+        # Combine scores using chunk ID to get original index
+        combined: dict[str, tuple[RetrievalResult, float]] = {}
 
         for result in vector_results:
-            chunk_idx = result.rank - 1
+            chunk_id = result.chunk.id
+            original_idx = self.chunk_to_idx.get(chunk_id, -1)
             vector_score = result.score * self.alpha
-            keyword_score = keyword_scores.get(chunk_idx, 0.0) * (1.0 - self.alpha)
-            combined[chunk_idx] = (result, vector_score + keyword_score)
+            keyword_score = keyword_scores.get(original_idx, 0.0) * (1.0 - self.alpha)
+            combined[chunk_id] = (result, vector_score + keyword_score)
 
         # Sort by combined score
         sorted_results = sorted(combined.values(), key=lambda x: x[1], reverse=True)

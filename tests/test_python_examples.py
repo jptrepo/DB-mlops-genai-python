@@ -314,3 +314,78 @@ class TestWeek3Finetuning:
 
         result = merge_adapters(adapters, MergeMethod.LINEAR)
         assert "Merged 2 adapters" in result
+
+
+class TestEdgeCases:
+    """Tests for edge cases and error handling."""
+
+    def test_lora_zero_rank_raises_error(self):
+        """Test that LoRA with zero rank raises an error."""
+        import pytest
+
+        from examples.python.course4.week3_finetuning import ConfigError, LoraConfig
+
+        lora = LoraConfig(rank=0, alpha=16)
+        with pytest.raises(ConfigError):
+            lora.scaling_factor()
+
+    def test_lora_zero_total_params_raises_error(self):
+        """Test that trainable_ratio with zero total params raises error."""
+        import pytest
+
+        from examples.python.course4.week3_finetuning import ConfigError, LoraConfig
+
+        lora = LoraConfig.new(8, 16)
+        with pytest.raises(ConfigError):
+            lora.trainable_ratio(0, 4096)
+
+    def test_rag_empty_pipeline_query(self):
+        """Test RAG pipeline query with no documents."""
+        from examples.python.course4.week2_rag import RagPipeline
+
+        rag = RagPipeline(embedding_dim=64)
+        # Query without ingesting any documents
+        response = rag.query("test query")
+        assert response.answer == "No relevant documents found."
+        assert response.sources == []
+        assert response.context_length == 0
+
+    def test_reranker_empty_query(self):
+        """Test reranker with empty query."""
+        from examples.python.course4.week2_rag import Chunk, Reranker, RetrievalResult
+
+        reranker = Reranker()
+        chunk = Chunk(id="c1", doc_id="d1", text="test", start_idx=0, end_idx=1)
+        results = [RetrievalResult(chunk=chunk, score=0.5, rank=1)]
+
+        # Empty query should return results unchanged
+        reranked = reranker.rerank("", results, top_k=1)
+        assert len(reranked) == 1
+
+    def test_reranker_empty_results(self):
+        """Test reranker with empty results."""
+        from examples.python.course4.week2_rag import Reranker
+
+        reranker = Reranker()
+        reranked = reranker.rerank("test query", [], top_k=1)
+        assert reranked == []
+
+    def test_model_not_loaded_error(self):
+        """Test that generating without loading raises error."""
+        import pytest
+
+        from examples.python.course4.week1_llm import (
+            GenerationConfig,
+            GgufMetadata,
+            LlmModel,
+            ModelNotLoadedError,
+            QuantizationType,
+        )
+
+        metadata = GgufMetadata.new("test", QuantizationType.Q4_K_M)
+        model = LlmModel(metadata)
+        # Don't load the model
+
+        config = GenerationConfig().with_max_tokens(50)
+        with pytest.raises(ModelNotLoadedError):
+            model.generate("Hello", config)

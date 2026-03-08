@@ -9,7 +9,10 @@ Course 4, Week 3: Fine-Tuning + Production + Capstone
 
 from .finetuning import (
     BiasMode,
+    CheckpointError,
     ComputeDtype,
+    ConfigError,
+    DataError,
     DatasetFormat,
     LoraConfig,
     LoraWeight,
@@ -45,4 +48,7 @@ __all__ = [
     "LoraWeight",
     "merge_adapters",
     "TrainingError",
+    "ConfigError",
+    "DataError",
+    "CheckpointError",
 ]

@@ -86,6 +86,8 @@ class LoraConfig:
 
     def scaling_factor(self) -> float:
         """Calculate scaling factor (alpha / rank)."""
+        if self.rank == 0:
+            raise ConfigError("Rank cannot be zero")
         return self.alpha / self.rank
 
     def trainable_params(self, hidden_dim: int) -> int:
@@ -95,6 +97,8 @@ class LoraConfig:
 
     def trainable_ratio(self, total_params: int, hidden_dim: int) -> float:
         """Calculate percentage of trainable parameters."""
+        if total_params <= 0:
+            raise ConfigError("Total params must be greater than zero")
         trainable = self.trainable_params(hidden_dim)
         return trainable / total_params * 100.0
 
@@ -412,11 +416,16 @@ class Trainer:
     def _get_learning_rate(self, step: int, total_steps: int, warmup_steps: int) -> float:
         """Calculate learning rate with warmup and cosine decay."""
         if step < warmup_steps:
-            # Linear warmup
+            # Linear warmup - avoid division by zero if warmup_steps is 0
+            if warmup_steps == 0:
+                return self.config.learning_rate
             return self.config.learning_rate * (step / warmup_steps)
         else:
-            # Cosine decay
-            progress = (step - warmup_steps) / (total_steps - warmup_steps)
+            # Cosine decay - avoid division by zero
+            decay_steps = total_steps - warmup_steps
+            if decay_steps <= 0:
+                return self.config.learning_rate
+            progress = (step - warmup_steps) / decay_steps
             return self.config.learning_rate * 0.5 * (1.0 + math.cos(math.pi * progress))
 
     def get_history(self) -> TrainingHistory:
