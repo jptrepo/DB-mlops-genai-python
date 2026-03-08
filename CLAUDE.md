@@ -26,6 +26,7 @@ labs/
   course4/          # GenAI hands-on labs
 examples/
   databricks/       # Databricks notebook examples
+  python/           # Python implementations of Sovereign AI concepts
   sovereign/        # Sovereign AI Stack (Rust) examples
 docs/
   outline.md        # Course outline
@@ -58,6 +59,15 @@ cargo install pmat      # Quality gates
 ### Python (Databricks notebooks)
 ```bash
 uv sync --all-extras
+```
+
+### Python Examples (Alternative to Rust)
+For learners who prefer Python over Rust, equivalent implementations are available:
+```bash
+# Run Python examples
+python examples/python/course4/week1_llm/llm_inference.py
+python examples/python/course4/week2_rag/rag_pipeline.py
+python examples/python/course4/week3_finetuning/finetuning.py
 ```
 
 ## Sovereign AI Stack Components
